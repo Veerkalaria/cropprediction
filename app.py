@@ -1,53 +1,44 @@
-import numpy as np
-import joblib
-import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import numpy as np
+import joblib
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for cross-origin requests
+CORS(app)  # Allow requests from Flutter app
 
-# Load the trained model
-try:
-    model = joblib.load("crop_recommendation_model.pkl")
-except Exception as e:
-    print(f"Error loading model: {e}")
-    model = None
+# Load trained model
+model = joblib.load("crop_recommendation_model.pkl")  # Ensure this file exists in the server
 
 @app.route("/")
 def home():
-    return "🚀 Crop Prediction Model is running!"
+    return "Crop Prediction API is running!"
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    if model is None:
-        return jsonify({"error": "Model not loaded properly"}), 500
-
     try:
         data = request.get_json()
+        
+        # Extract input values
+        features = [
+            float(data.get("N", 0.0)),
+            float(data.get("P", 0.0)),
+            float(data.get("K", 0.0)),
+            float(data.get("temperature", 0.0)),
+            float(data.get("humidity", 0.0)),
+            float(data.get("ph", 0.0)),
+            float(data.get("rainfall", 0.0))
+        ]
 
-        # Extract individual values with default fallbacks
-        N = data.get("N", 0)
-        P = data.get("P", 0)
-        K = data.get("K", 0)
-        temperature = data.get("temperature", 0)
-        humidity = data.get("humidity", 0)
-        ph = data.get("ph", 0)
-        rainfall = data.get("rainfall", 0)
+        # Convert to NumPy array and reshape
+        features = np.array(features).reshape(1, -1)
 
-        # Create features array in the format expected by the model
-        features = np.array([N, P, K, temperature, humidity, ph, rainfall]).reshape(1, -1)
+        # Predict crop
+        predicted_crop = model.predict(features)[0]
 
-        # Make prediction
-        prediction = model.predict(features)
+        return jsonify({"recommended_crop": predicted_crop})
 
-        # Return the result
-        return jsonify({"recommended_crop": prediction[0]})
-    
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    # Get port from environment variable (Render assigns a dynamic port)
-    port = int(os.environ.get("PORT", 5000))  # Default to 5000 if PORT is not set
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
