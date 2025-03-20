@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # Load the trained model
-model = joblib.load("model.pkl")
+model = joblib.load("crop_recommendation_model.pkl")
 
 @app.route("/")
 def home():
