@@ -32,6 +32,8 @@ def predict():
         ]
         features = np.array(features).reshape(1, -1)
         predicted_crop = model.predict(features)[0]
+        # Convert NumPy type to native Python type
+        predicted_crop = predicted_crop.item() if isinstance(predicted_crop, np.generic) else predicted_crop
         return jsonify({"recommended_crop": predicted_crop})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
