@@ -1,6 +1,6 @@
-import os
 import numpy as np
 import joblib
+import os
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
@@ -23,5 +23,6 @@ def predict():
         return jsonify({"error": str(e)})
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Get PORT from env or default to 5000
+    # Get port from environment variable (Render assigns a dynamic port)
+    port = int(os.environ.get("PORT", 10000))  # Default to 10000 if PORT is not set
     app.run(host="0.0.0.0", port=port)
