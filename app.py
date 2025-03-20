@@ -1,33 +1,30 @@
+import numpy as np
+import joblib
+import os
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS  # Don't forget CORS if you need it for Flutter
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS to allow requests from Flutter
+CORS(app)  # Add this if you need cross-origin requests
 
-@app.route('/predict', methods=['POST'])
+# Load the trained model
+model = joblib.load("crop_recommendation_model.pkl")
+
+@app.route("/")
+def home():
+    return "🚀 Model is running!"
+
+@app.route("/predict", methods=["POST"])
 def predict():
     try:
         data = request.get_json()
-
-        # Extracting input values
-        N = data.get("N", 0)
-        P = data.get("P", 0)
-        K = data.get("K", 0)
-        temperature = data.get("temperature", 0)
-        humidity = data.get("humidity", 0)
-        ph = data.get("ph", 0)
-        rainfall = data.get("rainfall", 0)
-
-        # Example prediction logic (Replace with ML model)
-        if N > 50:
-            recommended_crop = "Wheat"
-        else:
-            recommended_crop = "Rice"
-
-        return jsonify({"recommended_crop": recommended_crop})
-
+        features = np.array(data["features"]).reshape(1, -1)
+        prediction = model.predict(features)
+        return jsonify({"prediction": prediction.tolist()})
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": str(e)})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    # Get port from environment variable (Render assigns a dynamic port)
+    port = int(os.environ.get("PORT", 10000))  # Default to 10000 if PORT is not set
+    app.run(host="0.0.0.0", port=port)
