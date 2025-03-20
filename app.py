@@ -2,12 +2,16 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import numpy as np
 import joblib
+import os
 
 app = Flask(__name__)
-CORS(app)  # Allow requests from Flutter app
+CORS(app)
 
-# Load trained model
-model = joblib.load("crop_recommendation_model.pkl")  # Ensure this file exists in the server
+# Load trained model with error handling
+model_path = "crop_recommendation_model.pkl"
+if not os.path.exists(model_path):
+    raise FileNotFoundError(f"Model file {model_path} not found")
+model = joblib.load(model_path)
 
 @app.route("/")
 def home():
@@ -17,8 +21,6 @@ def home():
 def predict():
     try:
         data = request.get_json()
-        
-        # Extract input values
         features = [
             float(data.get("N", 0.0)),
             float(data.get("P", 0.0)),
@@ -28,17 +30,12 @@ def predict():
             float(data.get("ph", 0.0)),
             float(data.get("rainfall", 0.0))
         ]
-
-        # Convert to NumPy array and reshape
         features = np.array(features).reshape(1, -1)
-
-        # Predict crop
         predicted_crop = model.predict(features)[0]
-
         return jsonify({"recommended_crop": predicted_crop})
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
